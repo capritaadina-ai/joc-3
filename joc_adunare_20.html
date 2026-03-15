@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adunare cu trecere peste ordin (până la 20)</title>
+  <style>
+    :root{
+      --bg1:#bfe9ff;
+      --bg2:#e6fff2;
+      --card:#ffffffcc;
+      --ink:#1f2a37;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --accent:#7c3aed;
+      --shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--ink);
+      min-height:100vh;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, var(--bg2), transparent 60%),
+        radial-gradient(900px 600px at 80% 0%, #fff2cc, transparent 55%),
+        linear-gradient(180deg, var(--bg1), #ffffff);
+      overflow-x:hidden;
+    }
+    header{
+      padding:18px 16px 8px;
+      display:flex;
+      justify-content:center;
+    }
+    .topbar{
+      width:min(1100px, 96vw);
+      background:var(--card);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:14px 14px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      backdrop-filter: blur(10px);
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .title h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .title .sub{
+      font-size:13px;
+      opacity:.85;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    button{
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,.12);
+      transition: transform .06s ease, filter .15s ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active{ transform: translateY(1px) scale(.99); }
+    .btn-primary{ background:linear-gradient(135deg,#7c3aed,#2563eb); color:white; }
+    .btn-ghost{ background:white; color:#111827; border:1px solid rgba(0,0,0,.08); }
+    .pill{
+      font-weight:800;
+      background:rgba(124,58,237,.12);
+      border:1px solid rgba(124,58,237,.25);
+      color:#4c1d95;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:13px;
+      display:flex; gap:8px; align-items:center;
+      white-space:nowrap;
+    }
+    .pill b{ font-size:14px; }
+
+    main{
+      display:flex;
+      justify-content:center;
+      padding:10px 16px 24px;
+    }
+    .stage{
+      width:min(1100px, 96vw);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .stage{ grid-template-columns: 1fr; }
+    }
+    .panel{
+      background:var(--card);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:14px;
+      backdrop-filter: blur(10px);
+      position:relative;
+      overflow:hidden;
+    }
+    .panel::before{
+      content:"";
+      position:absolute; inset:-120px -120px auto auto;
+      width:260px; height:260px;
+      background: radial-gradient(circle at 30% 30%, rgba(124,58,237,.22), transparent 60%);
+      transform: rotate(10deg);
+      pointer-events:none;
+    }
+
+    .equation{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 12px;
+      border-radius:16px;
+      background: rgba(255,255,255,.8);
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .eq-left{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .op{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:.5px;
+    }
+    .result{
+      font-size:16px;
+      font-weight:900;
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(22,163,74,.12);
+      border:1px solid rgba(22,163,74,.25);
+      color:#14532d;
+      min-width:170px;
+      text-align:center;
+    }
+    .result.pending{
+      background: rgba(245,158,11,.12);
+      border-color: rgba(245,158,11,.25);
+      color:#7c2d12;
+    }
+
+    .instructions{
+      margin-top:12px;
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(0,0,0,.06);
+      background: rgba(255,255,255,.75);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .badge{
+      width:34px; height:34px;
+      display:grid; place-items:center;
+      border-radius:12px;
+      background: rgba(124,58,237,.12);
+      border:1px solid rgba(124,58,237,.25);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .instr-text{
+      font-size:14px;
+      line-height:1.35;
+    }
+    .instr-text b{ color:#111827; }
+
+    .world{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      align-items:stretch;
+    }
+    @media (max-width: 700px){
+      .world{ grid-template-columns: 1fr; }
+    }
+
+    .character{
+      display:grid;
+      grid-template-rows: auto 1fr;
+      gap:10px;
+      border-radius:16px;
+      padding:12px;
+      background: rgba(255,255,255,.75);
+      border:1px solid rgba(0,0,0,.06);
+      position:relative;
+      overflow:hidden;
+    }
+    .char-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .char-name{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+    }
+
+    /* upgraded "avatar" badge */
+    .char-emoji{
+      width:44px;height:44px;
+      border-radius:16px;
+      display:grid; place-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(0,0,0,.03));
+      border:1px solid rgba(0,0,0,.08);
+      box-shadow: 0 8px 16px rgba(0,0,0,.10);
+    }
+    .char-emoji svg{ display:block; }
+
+    .count{
+      font-weight:900;
+      background: rgba(37,99,235,.12);
+      border:1px solid rgba(37,99,235,.22);
+      color:#1e3a8a;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:13px;
+      white-space:nowrap;
+    }
+    .pile{
+      position:relative;
+      border-radius:14px;
+      border:1px dashed rgba(0,0,0,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.55));
+      min-height:160px;
+      overflow:hidden;
+    }
+    .pile::after{
+      content:"Trage alunele de aici";
+      position:absolute; left:10px; bottom:10px;
+      font-size:12px; font-weight:800;
+      opacity:.65;
+    }
+
+    /* Ten frames */
+    .frames{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    .frameCard{
+      background: rgba(255,255,255,.75);
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:16px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .frameTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      font-weight:900;
+    }
+    .frameTitle span{
+      font-size:13px;
+      opacity:.8;
+      font-weight:800;
+    }
+    .tenframe{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-auto-rows: 54px;
+      gap:8px;
+      border-radius:14px;
+      padding:10px;
+      border:2px solid rgba(124,58,237,.25);
+      background: linear-gradient(180deg, rgba(124,58,237,.08), rgba(124,58,237,.03));
+      position:relative;
+    }
+    .cell{
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.12);
+      background: rgba(255,255,255,.75);
+      position:relative;
+    }
+    .cell.filled{
+      background: rgba(34,197,94,.12);
+      border-color: rgba(34,197,94,.35);
+    }
+
+    /* Nuts (draggable tokens) — SINGLE HAZELNUT SVG */
+    .nut{
+      width:46px; height:46px;
+      border-radius:16px;
+      position:absolute;
+      cursor:grab;
+      user-select:none;
+      touch-action:none;
+      box-shadow: 0 10px 22px rgba(0,0,0,.18);
+      border:1px solid rgba(0,0,0,.10);
+      background-color: transparent;
+      background-repeat:no-repeat;
+      background-position:center;
+      background-size: 46px 46px;
+    }
+    .nut:active{ cursor:grabbing; }
+
+    .toast{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(0,0,0,.06);
+      background: rgba(255,255,255,.75);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .toast .icon{
+      width:34px; height:34px;
+      border-radius:12px;
+      display:grid; place-items:center;
+      font-size:18px;
+      flex:0 0 auto;
+      border:1px solid rgba(0,0,0,.08);
+      background: rgba(0,0,0,.04);
+    }
+    .toast.good .icon{ background: rgba(22,163,74,.12); border-color: rgba(22,163,74,.22); }
+    .toast.warn .icon{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.22); }
+    .toast.bad  .icon{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.22); }
+    .toast .msg{ font-size:14px; line-height:1.35; }
+    .hint{
+      font-size:12px;
+      opacity:.75;
+      margin-top:6px;
+    }
+
+    .footerNote{
+      margin-top:10px;
+      font-size:12px;
+      opacity:.75;
+    }
+
+    /* Little confetti */
+    .confetti{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      display:none;
+    }
+    .confetti.show{ display:block; }
+    .confetti i{
+      position:absolute;
+      width:10px;height:16px;
+      border-radius:3px;
+      opacity:.9;
+      animation: fall 900ms linear forwards;
+    }
+    @keyframes fall{
+      from{ transform: translateY(-30px) rotate(0deg); }
+      to{ transform: translateY(520px) rotate(220deg); opacity:1; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="title">
+      <h1>Joc: Adunare cu trecere peste ordin (până la 20)</h1>
+      <div class="sub">Copiii trag alune în suporturi de 10 ca să “vadă” completarea la 10 și restul.</div>
+    </div>
+    <div class="controls">
+      <div class="pill">Nivel: <b>până la 20</b> • doar cu trecere</div>
+      <button class="btn-ghost" id="btnReset">Reîncepe exercițiul</button>
+      <button class="btn-primary" id="btnNext">Exercițiu nou</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="stage">
+    <!-- Left: story + piles -->
+    <section class="panel" aria-label="Poveste și grămezi">
+      <div class="equation">
+        <div class="eq-left">
+          <div class="op" id="opText">8 + 9</div>
+          <div class="pill" id="stepPill">Pasul 1/3</div>
+        </div>
+        <div class="result pending" id="resultBox">Rezultat: ?</div>
+      </div>
+
+      <div class="instructions" id="instructions">
+        <div class="badge">🧠</div>
+        <div class="instr-text" id="instrText">
+          <b>Pasul 1:</b> Trage <b>8</b> alune din grămada veveriței în <b>Suportul 1</b>.
+          <div class="hint">Sfat: umple întâi cât zice primul număr.</div>
+        </div>
+      </div>
+
+      <div class="world">
+        <div class="character">
+          <div class="char-head">
+            <div class="char-name">
+              <div class="char-emoji" aria-label="Veveriță">
+                <svg viewBox="0 0 64 64" width="30" height="30">
+                  <path d="M46 18c6 2 10 8 10 14 0 9-7 16-16 16" fill="none" stroke="#8b4513" stroke-width="6" stroke-linecap="round"/>
+                  <circle cx="26" cy="30" r="12" fill="#c97a3b"/>
+                  <circle cx="22" cy="28" r="2" fill="#111"/>
+                  <path d="M18 36c4 4 12 4 16 0" fill="none" stroke="#7a3e18" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M18 18l6 6" stroke="#7a3e18" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M34 18l-6 6" stroke="#7a3e18" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>Veverița</div>
+            </div>
+            <div class="count">Are: <span id="countA">8</span> alune</div>
+          </div>
+          <div class="pile" id="pileA" aria-label="Grămada veveriței"></div>
+        </div>
+
+        <div class="character">
+          <div class="char-head">
+            <div class="char-name">
+              <div class="char-emoji" aria-label="Iepuraș">
+                <svg viewBox="0 0 64 64" width="30" height="30">
+                  <ellipse cx="32" cy="34" rx="14" ry="12" fill="#e9e9ef"/>
+                  <ellipse cx="24" cy="16" rx="6" ry="14" fill="#e9e9ef"/>
+                  <ellipse cx="40" cy="16" rx="6" ry="14" fill="#e9e9ef"/>
+                  <ellipse cx="24" cy="18" rx="3" ry="10" fill="#f6b6c9"/>
+                  <ellipse cx="40" cy="18" rx="3" ry="10" fill="#f6b6c9"/>
+                  <circle cx="27" cy="33" r="2" fill="#111"/>
+                  <circle cx="37" cy="33" r="2" fill="#111"/>
+                  <path d="M30 38c2 2 2 2 4 0" fill="none" stroke="#c08497" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>Pufi</div>
+            </div>
+            <div class="count">Are: <span id="countB">9</span> alune</div>
+          </div>
+          <div class="pile" id="pileB" aria-label="Grămada lui Pufi"></div>
+        </div>
+      </div>
+
+      <div class="toast warn" id="toast">
+        <div class="icon" id="toastIcon">✨</div>
+        <div class="msg" id="toastMsg">
+          Trage alunele în suporturi. Jocul te ghidează pas cu pas.
+        </div>
+      </div>
+
+      <div class="footerNote">Tip: merge foarte bine pe tablă interactivă (touch).</div>
+    </section>
+
+    <!-- Right: ten frames -->
+    <section class="panel" aria-label="Suporturi de 10">
+      <div class="frames">
+        <div class="frameCard">
+          <div class="frameTitle">
+            <div>Suportul 1 (10)</div>
+            <span><b id="f1Count">0</b>/10</span>
+          </div>
+          <div class="tenframe" id="frame1"></div>
+        </div>
+
+        <div class="frameCard">
+          <div class="frameTitle">
+            <div>Suportul 2 (10)</div>
+            <span><b id="f2Count">0</b>/10</span>
+          </div>
+          <div class="tenframe" id="frame2"></div>
+        </div>
+      </div>
+
+      <div class="confetti" id="confetti"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  // ---------- Helpers ----------
+  const $ = (sel) => document.querySelector(sel);
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function setToast(type, icon, msg){
+    const t = $("#toast");
+    t.classList.remove("good","warn","bad");
+    t.classList.add(type);
+    $("#toastIcon").textContent = icon;
+    $("#toastMsg").textContent = msg;
+  }
+
+  function confettiBoom(){
+    const c = $("#confetti");
+    c.innerHTML = "";
+    const colors = ["#7c3aed","#2563eb","#16a34a","#f59e0b","#ef4444","#06b6d4"];
+    const n = 40;
+    for(let i=0;i<n;i++){
+      const el = document.createElement("i");
+      el.style.left = randInt(0, 100) + "%";
+      el.style.top = randInt(-30, 0) + "px";
+      el.style.background = colors[i % colors.length];
+      el.style.transform = `rotate(${randInt(0,180)}deg)`;
+      el.style.animationDelay = randInt(0, 250) + "ms";
+      el.style.opacity = (0.7 + Math.random()*0.3).toFixed(2);
+      c.appendChild(el);
+    }
+    c.classList.add("show");
+    setTimeout(()=>c.classList.remove("show"), 1100);
+  }
+
+  // ---------- Ten frame cells ----------
+  function buildFrame(frameEl){
+    frameEl.innerHTML = "";
+    for(let i=0;i<10;i++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.index = String(i);
+      frameEl.appendChild(cell);
+    }
+  }
+
+  // ---------- Game State ----------
+  let a = 8, b = 9;
+  let step = 1;
+
+  const placements = new Map();
+  const nuts = new Map(); // id -> {el, owner:"A"|"B"}
+
+  // ---------- UI Elements ----------
+  const opText = $("#opText");
+  const resultBox = $("#resultBox");
+  const stepPill = $("#stepPill");
+  const instrText = $("#instrText");
+
+  const pileA = $("#pileA");
+  const pileB = $("#pileB");
+
+  const frame1 = $("#frame1");
+  const frame2 = $("#frame2");
+
+  const f1CountEl = $("#f1Count");
+  const f2CountEl = $("#f2Count");
+  const countAEl = $("#countA");
+  const countBEl = $("#countB");
+
+  // ---------- Drag logic (pointer events) ----------
+  let drag = null;
+
+  function pointerDownNut(e){
+    const el = e.currentTarget;
+    const id = el.dataset.id;
+    el.setPointerCapture(e.pointerId);
+
+    const r = el.getBoundingClientRect();
+    drag = {
+      id,
+      el,
+      offX: e.clientX - r.left,
+      offY: e.clientY - r.top,
+      origin: placements.get(id)
+    };
+    el.style.zIndex = 9999;
+  }
+
+  function pointerMove(e){
+    if(!drag) return;
+    const el = drag.el;
+    const x = e.clientX - drag.offX;
+    const y = e.clientY - drag.offY;
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.style.position = "fixed";
+  }
+
+  function pointerUp(e){
+    if(!drag) return;
+    const {id, el, origin} = drag;
+    drag = null;
+
+    const drop = detectDrop(e.clientX, e.clientY);
+    if(drop){
+      attemptPlace(id, drop);
+    } else {
+      snapNutToPlacement(id, origin);
+      setToast("warn","🧩","Încearcă să lași aluna pe un pătrățel din suport.");
+    }
+
+    el.style.zIndex = 10;
+  }
+
+  function detectDrop(x, y){
+    // frame1
+    const f1Cells = [...frame1.querySelectorAll(".cell")];
+    for(const cell of f1Cells){
+      const r = cell.getBoundingClientRect();
+      if(x>=r.left && x<=r.right && y>=r.top && y<=r.bottom){
+        return {where:"f1", cellIndex: Number(cell.dataset.index)};
+      }
+    }
+    // frame2
+    const f2Cells = [...frame2.querySelectorAll(".cell")];
+    for(const cell of f2Cells){
+      const r = cell.getBoundingClientRect();
+      if(x>=r.left && x<=r.right && y>=r.top && y<=r.bottom){
+        return {where:"f2", cellIndex: Number(cell.dataset.index)};
+      }
+    }
+    // piles (return)
+    const ra = pileA.getBoundingClientRect();
+    if(x>=ra.left && x<=ra.right && y>=ra.top && y<=ra.bottom){
+      return {where:"pileA"};
+    }
+    const rb = pileB.getBoundingClientRect();
+    if(x>=rb.left && x<=rb.right && y>=rb.top && y<=rb.bottom){
+      return {where:"pileB"};
+    }
+    return null;
+  }
+
+  // ---------- Placement helpers ----------
+  function countIn(where){
+    let n=0;
+    placements.forEach(p => { if(p.where === where) n++; });
+    return n;
+  }
+  function isCellOccupied(where, cellIndex){
+    let occ = false;
+    placements.forEach(p => {
+      if(p.where===where && p.cellIndex===cellIndex) occ = true;
+    });
+    return occ;
+  }
+
+  function snapNutToPlacement(id, placement){
+    const nut = nuts.get(id);
+    if(!nut) return;
+    const el = nut.el;
+
+    if(!placement){
+      placement = { where: nut.owner==="A" ? "pileA" : "pileB" };
+      placements.set(id, placement);
+    }
+
+    if(placement.where === "pileA" || placement.where === "pileB"){
+      const pile = placement.where === "pileA" ? pileA : pileB;
+      const pr = pile.getBoundingClientRect();
+      const size = 46;
+      const px = randInt(8, Math.max(8, Math.floor(pr.width - size - 8)));
+      const py = randInt(12, Math.max(12, Math.floor(pr.height - size - 26)));
+      el.style.position = "absolute";
+      el.style.left = px + "px";
+      el.style.top  = py + "px";
+      pile.appendChild(el);
+    } else if(placement.where === "f1" || placement.where === "f2"){
+      const frame = placement.where==="f1" ? frame1 : frame2;
+      const cell = frame.querySelector(`.cell[data-index="${placement.cellIndex}"]`);
+      if(!cell) return;
+
+      const cr = cell.getBoundingClientRect();
+      const fr = frame.getBoundingClientRect();
+      const left = (cr.left - fr.left) + (cr.width/2 - 23);
+      const top  = (cr.top  - fr.top)  + (cr.height/2 - 23);
+      el.style.position = "absolute";
+      el.style.left = left + "px";
+      el.style.top  = top  + "px";
+      frame.appendChild(el);
+    }
+    updateCellHighlights();
+    updateCounts();
+  }
+
+  function updateCellHighlights(){
+    for(const cell of frame1.querySelectorAll(".cell")) cell.classList.remove("filled");
+    for(const cell of frame2.querySelectorAll(".cell")) cell.classList.remove("filled");
+
+    placements.forEach(p=>{
+      if(p.where==="f1"){
+        const cell = frame1.querySelector(`.cell[data-index="${p.cellIndex}"]`);
+        if(cell) cell.classList.add("filled");
+      }
+      if(p.where==="f2"){
+        const cell = frame2.querySelector(`.cell[data-index="${p.cellIndex}"]`);
+        if(cell) cell.classList.add("filled");
+      }
+    });
+  }
+
+  function updateCounts(){
+    const f1 = countIn("f1");
+    const f2 = countIn("f2");
+    f1CountEl.textContent = String(f1);
+    f2CountEl.textContent = String(f2);
+
+    let ra=0, rb=0;
+    placements.forEach(p=>{
+      if(p.where==="pileA") ra++;
+      if(p.where==="pileB") rb++;
+    });
+    countAEl.textContent = String(ra);
+    countBEl.textContent = String(rb);
+
+    if(step===4){
+      const sum = a+b;
+      resultBox.classList.remove("pending");
+      resultBox.textContent = `Rezultat: ${sum}`;
+    } else {
+      resultBox.classList.add("pending");
+      resultBox.textContent = "Rezultat: ?";
+    }
+  }
+
+  function firstFreeCell(where){
+    for(let i=0;i<10;i++){
+      if(!isCellOccupied(where, i)) return i;
+    }
+    return null;
+  }
+
+  // ---------- Rules & Step progression ----------
+  function attemptPlace(id, drop){
+    const nut = nuts.get(id);
+    if(!nut) return;
+
+    if(drop.where==="pileA" || drop.where==="pileB"){
+      const want = (nut.owner==="A") ? "pileA" : "pileB";
+      if(drop.where !== want){
+        setToast("bad","🚫","Aluna veveriței nu intră în grămada lui Pufi (și invers).");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      placements.set(id, {where: drop.where});
+      snapNutToPlacement(id, placements.get(id));
+      setToast("warn","↩️","Ai pus aluna înapoi în grămadă.");
+      checkProgress();
+      return;
+    }
+
+    if(drop.where==="f1" || drop.where==="f2"){
+      if(isCellOccupied(drop.where, drop.cellIndex)){
+        const next = firstFreeCell(drop.where);
+        if(next===null){
+          setToast("bad","🧱","Suportul acesta e plin.");
+          snapNutToPlacement(id, placements.get(id));
+          return;
+        }
+        drop.cellIndex = next;
+      }
+    }
+
+    const needToMakeTen = 10 - a;
+
+    if(step===1){
+      if(nut.owner!=="A"){
+        setToast("bad","🐿️","Pasul 1: folosim doar alunele veveriței în Suportul 1.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      if(drop.where!=="f1"){
+        setToast("warn","📦","Pasul 1: pune alunele veveriței în Suportul 1.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      placements.set(id, {where:"f1", cellIndex: drop.cellIndex});
+      snapNutToPlacement(id, placements.get(id));
+      setToast("warn","✨","Bine! Continuă până ai pus toate alunele veveriței în Suportul 1.");
+      checkProgress();
+      return;
+    }
+
+    if(step===2){
+      if(nut.owner!=="B"){
+        setToast("bad","🐰","Pasul 2: acum folosim alunele lui Pufi ca să completăm la 10.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      if(drop.where!=="f1"){
+        setToast("warn","🎯","Pasul 2: pune alunele lui Pufi în Suportul 1 până se face 10.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      placements.set(id, {where:"f1", cellIndex: drop.cellIndex});
+      snapNutToPlacement(id, placements.get(id));
+      setToast("warn","🟣","Completează! Când se face 10, trecem la Suportul 2.");
+      checkProgress();
+      return;
+    }
+
+    if(step===3){
+      if(nut.owner!=="B"){
+        setToast("bad","🐰","Pasul 3: punem restul alunelor lui Pufi în Suportul 2.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      if(drop.where!=="f2"){
+        setToast("warn","➡️","Pasul 3: pune restul în Suportul 2.");
+        snapNutToPlacement(id, placements.get(id));
+        return;
+      }
+      placements.set(id, {where:"f2", cellIndex: drop.cellIndex});
+      snapNutToPlacement(id, placements.get(id));
+      setToast("warn","🌟","Bravo! Mai pune până termini alunele lui Pufi.");
+      checkProgress();
+      return;
+    }
+
+    placements.set(id, (drop.where==="f1" || drop.where==="f2") ? drop : {where: (nut.owner==="A"?"pileA":"pileB")});
+    snapNutToPlacement(id, placements.get(id));
+  }
+
+  function checkProgress(){
+    const f1 = countIn("f1");
+    const inPileA = countIn("pileA");
+    const inPileB = countIn("pileB");
+    const needToMakeTen = 10 - a;
+
+    if(step===1){
+      if(inPileA===0 && f1===a){
+        step = 2;
+        updateStepUI();
+        setToast("good","✅",`Perfect! Acum completează Suportul 1 cu ${needToMakeTen} alune de la Pufi ca să faci 10.`);
+      }
+      return;
+    }
+
+    if(step===2){
+      if(f1===10){
+        step = 3;
+        updateStepUI();
+        setToast("good","🎉","S-a făcut 10! Acum mutăm restul alunelor lui Pufi în Suportul 2.");
+      } else {
+        const placedBInF1 = f1 - a;
+        const remainingToTen = clamp(needToMakeTen - placedBInF1, 0, 10);
+        instrText.innerHTML = `<b>Pasul 2:</b> Completează Suportul 1 până la 10. Mai ai nevoie de <b>${remainingToTen}</b> alune de la Pufi.`;
+      }
+      return;
+    }
+
+    if(step===3){
+      if(inPileB===0){
+        step = 4;
+        updateStepUI();
+        setToast("good","🏆",`Bravo! Ai arătat că ${a} + ${b} = ${a+b}.`);
+        confettiBoom();
+      }
+      return;
+    }
+  }
+
+  function updateStepUI(){
+    const needToMakeTen = 10 - a;
+    const remainBForFrame2 = b - needToMakeTen;
+
+    if(step===1){
+      stepPill.textContent = "Pasul 1/3";
+      instrText.innerHTML = `<b>Pasul 1:</b> Trage <b>${a}</b> alune din grămada veveriței în <b>Suportul 1</b>.
+      <div class="hint">Sfat: umple întâi cât zice primul număr.</div>`;
+    } else if(step===2){
+      stepPill.textContent = "Pasul 2/3";
+      instrText.innerHTML = `<b>Pasul 2:</b> Pufi are <b>${b}</b> alune. Completează <b>Suportul 1</b> cu <b>${needToMakeTen}</b> alune ca să se facă <b>10</b>.`;
+    } else if(step===3){
+      stepPill.textContent = "Pasul 3/3";
+      instrText.innerHTML = `<b>Pasul 3:</b> Ai făcut <b>10</b> în Suportul 1. Pune restul (<b>${remainBForFrame2}</b>) în <b>Suportul 2</b>.`;
+    } else {
+      stepPill.textContent = "Gata! 🎉";
+      instrText.innerHTML = `<b>Felicitări!</b> Apasă <b>Exercițiu nou</b> pentru altă adunare cu trecere peste ordin.`;
+    }
+    updateCounts();
+  }
+
+  // ---------- Problem generation (only with crossing, sum <= 20) ----------
+  function newProblem(){
+    let aa, bb;
+    do{
+      aa = randInt(2,9);
+      bb = randInt(2,9);
+    } while(aa + bb <= 10 || aa + bb > 20);
+
+    a = aa; b = bb;
+    resetBoard();
+  }
+
+  // ---------- Board setup ----------
+  function createNuts(){
+    nuts.clear();
+    placements.clear();
+    pileA.innerHTML = "";
+    pileB.innerHTML = "";
+
+    const makeNut = (owner, i) => {
+      const id = owner + "-" + i + "-" + Math.random().toString(16).slice(2);
+      const el = document.createElement("div");
+      el.className = "nut";
+      el.textContent = "";
+      el.dataset.id = id;
+
+      // SINGLE hazelnut SVG as background (clear "one nut")
+      const hazelnutSvg = encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="g" cx="30%" cy="25%" r="70%">
+      <stop offset="0" stop-color="#fff3db"/>
+      <stop offset="0.55" stop-color="#d79a57"/>
+      <stop offset="1" stop-color="#8a4f1e"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#5aa34a"/>
+      <stop offset="1" stop-color="#2f6b2a"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="33" cy="52" rx="18" ry="7" fill="rgba(0,0,0,0.12)"/>
+
+  <path d="M18 30c0-12 9-20 20-20s20 8 20 20-7 26-20 26-20-14-20-26z"
+        fill="url(#g)" stroke="rgba(0,0,0,0.12)" stroke-width="1.2"/>
+
+  <path d="M26 18c-4 4-6 10-6 16 0 10 6 20 16 22"
+        fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M40 16c6 5 10 12 10 20 0 11-7 20-16 22"
+        fill="none" stroke="rgba(0,0,0,0.10)" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="M18 28c2-10 10-16 20-16s18 6 20 16c-6 4-14 6-20 6s-14-2-20-6z"
+        fill="url(#cap)" stroke="rgba(0,0,0,0.12)" stroke-width="1.2"/>
+  <path d="M38 10c2-3 6-4 10-3-4 3-6 6-7 10"
+        fill="none" stroke="rgba(47,107,42,0.9)" stroke-width="3" stroke-linecap="round"/>
+
+  <circle cx="26" cy="30" r="3" fill="rgba(255,255,255,0.55)"/>
+</svg>
+      `);
+      el.style.backgroundImage = `url("data:image/svg+xml,${hazelnutSvg}")`;
+
+      el.addEventListener("pointerdown", pointerDownNut);
+      nuts.set(id, {el, owner});
+      placements.set(id, {where: owner==="A" ? "pileA" : "pileB"});
+      snapNutToPlacement(id, placements.get(id));
+    };
+
+    for(let i=0;i<a;i++) makeNut("A", i);
+    for(let i=0;i<b;i++) makeNut("B", i);
+  }
+
+  function resetBoard(){
+    buildFrame(frame1);
+    buildFrame(frame2);
+
+    step = 1;
+    opText.textContent = `${a} + ${b}`;
+    resultBox.classList.add("pending");
+    resultBox.textContent = "Rezultat: ?";
+
+    createNuts();
+    updateStepUI();
+    setToast("warn","✨","Trage alunele în suporturi. Jocul te ghidează pas cu pas.");
+  }
+
+  $("#btnNext").addEventListener("click", () => newProblem());
+  $("#btnReset").addEventListener("click", () => resetBoard());
+
+  window.addEventListener("pointermove", pointerMove, {passive:false});
+  window.addEventListener("pointerup", pointerUp);
+
+  window.addEventListener("touchmove", (e) => {
+    if(drag) e.preventDefault();
+  }, {passive:false});
+
+  resetBoard();
+})();
+</script>
+</body>
+</html>
